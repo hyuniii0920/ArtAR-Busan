@@ -1,0 +1,13 @@
+fastapi==0.115.*
+uvicorn[standard]==0.34.*
+gunicorn==23.*
+sqlalchemy[asyncio]==2.0.*
+asyncpg==0.30.*
+alembic==1.15.*
+pydantic-settings==2.8.*
+python-jose[cryptography]==3.4.*
+bcrypt==4.3.*
+google-cloud-storage==2.19.*
+Pillow==11.1.*
+slowapi==0.1.*
+python-multipart==0.0.*
