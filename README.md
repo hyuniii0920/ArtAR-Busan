@@ -70,8 +70,9 @@ cd backend
 docker compose up
 ```
 
-API 서버: http://localhost:8080  
+API 서버: http://localhost:8080
 Swagger UI: http://localhost:8080/docs
+ReDoc: http://localhost:8080/redoc
 
 ### 로컬 실행 (Docker 없이)
 
@@ -84,6 +85,16 @@ cp .env.example .env    # 환경변수 설정
 
 alembic upgrade head    # DB 마이그레이션
 uvicorn app.main:app --reload --port 8080
+```
+
+### 시드 데이터
+
+개발/테스트용 샘플 데이터(행사 2건, 장소 3건, 작품 6건)를 삽입합니다.
+
+```bash
+cd backend
+python -m scripts.seed          # 삽입
+python -m scripts.seed --reset  # 기존 데이터 삭제 후 재삽입
 ```
 
 ## API 구조
@@ -112,6 +123,14 @@ uvicorn app.main:app --reload --port 8080
 | GET    | `/stats/events/{id}/summary`              | 방문 통계                |
 | GET    | `/stats/events/{id}/demographics`         | 언어/OS 분포             |
 
+## 프론트엔드 팀 API 연동
+
+- **Swagger UI**: http://localhost:8080/docs — 인터랙티브 API 테스트
+- **ReDoc**: http://localhost:8080/redoc — 깔끔한 API 레퍼런스 문서
+- **OpenAPI JSON**: http://localhost:8080/openapi.json — 코드 생성용 스키마
+
+모바일 앱 팀은 `/api/v1/app/*` 엔드포인트만 사용하며, `lang` 쿼리 파라미터로 다국어를 지정합니다 (`ko`, `en`, `jp`, `cn`).
+
 ## 개발 명령어
 
 ```bash
@@ -126,6 +145,9 @@ cd backend && alembic revision --autogenerate -m "description"
 
 # DB 마이그레이션 적용
 cd backend && alembic upgrade head
+
+# 시드 데이터
+cd backend && python -m scripts.seed --reset
 ```
 
 ## 환경변수

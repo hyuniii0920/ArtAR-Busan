@@ -18,7 +18,7 @@ ArtAR Busan — 부산 문화행사용 공유 AR 앱 템플릿 플랫폼. 하나
 ```
 backend/
 ├── app/
-│   ├── main.py          # FastAPI 앱, CORS, rate limiting, lifespan
+│   ├── main.py          # FastAPI 앱, CORS, rate limiting, lifespan, OpenAPI 메타데이터
 │   ├── config.py        # pydantic-settings 환경변수
 │   ├── database.py      # async SQLAlchemy 엔진/세션
 │   ├── dependencies.py  # get_db, get_current_admin (JWT)
@@ -30,6 +30,9 @@ backend/
 │   ├── services/        # 비즈니스 로직
 │   └── utils/           # i18n 헬퍼 등
 ├── alembic/             # DB 마이그레이션
+│   └── versions/        # 마이그레이션 파일 (initial_schema 포함)
+├── scripts/
+│   └── seed.py          # 개발용 시드 데이터 (행사·장소·작품 샘플)
 ├── tests/               # pytest-asyncio 테스트
 ├── Dockerfile
 └── docker-compose.yml   # 로컬 개발 (PostgreSQL + FastAPI)
@@ -55,6 +58,12 @@ cd backend && alembic revision --autogenerate -m "description"
 
 # DB 마이그레이션 적용
 cd backend && alembic upgrade head
+
+# 시드 데이터 삽입 (DB 실행 중 필요)
+cd backend && python -m scripts.seed
+
+# 시드 데이터 초기화 후 재삽입
+cd backend && python -m scripts.seed --reset
 
 # 로컬 서버 직접 실행 (Docker 없이)
 cd backend && uvicorn app.main:app --reload --port 8080
