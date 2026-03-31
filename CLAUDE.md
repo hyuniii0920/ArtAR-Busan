@@ -11,7 +11,7 @@ ArtAR Busan — 부산 문화행사용 공유 AR 앱 템플릿 플랫폼. 하나
 - **Backend**: FastAPI (Python 3.11), SQLAlchemy 2.0 (async), Alembic, Pydantic v2
 - **Database**: PostgreSQL 15 (JSONB for i18n)
 - **Infrastructure**: GCP Cloud Run, Cloud SQL, GCS, GitHub Actions CI/CD
-- **Frontend** (별도 팀): Flutter (관람객 앱), React + TypeScript (어드민 CMS)
+- **Frontend** (별도 팀): Kotlin + ARCore (Android 관람객 앱), React + TypeScript (어드민 CMS)
 
 ## Repository Structure
 
