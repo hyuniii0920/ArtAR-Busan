@@ -17,7 +17,7 @@
 
 | 레이어       | 기술                                                   |
 | ------------ | ------------------------------------------------------ |
-| 관람객 앱    | Kotlin (Android), ARCore                                |
+| 관람객 앱    | Kotlin (Android), ARCore                               |
 | 어드민 CMS   | React 18 + TypeScript                                  |
 | 백엔드 API   | FastAPI (Python 3.11), SQLAlchemy 2.0 (async), Alembic |
 | 데이터베이스 | PostgreSQL 15                                          |
@@ -123,11 +123,46 @@ python -m scripts.seed --reset  # 기존 데이터 삭제 후 재삽입
 | GET    | `/stats/events/{id}/summary`              | 방문 통계                |
 | GET    | `/stats/events/{id}/demographics`         | 언어/OS 분포             |
 
+## 배포 (GCP Cloud Run)
+
+프로덕션 서버는 GCP Cloud Run + Cloud SQL에 배포되어 있습니다.
+
+| 리소스    | 구성                                          |
+| --------- | --------------------------------------------- |
+| Cloud Run | `artar-backend`, asia-northeast3 리전         |
+| Cloud SQL | PostgreSQL 15 (`artar-db`), db-f1-micro       |
+| CI/CD     | GitHub Actions (main push → 테스트 자동 실행) |
+
+### 수동 배포
+
+```bash
+cd backend
+gcloud run deploy artar-backend --source=. --region=asia-northeast3
+```
+
+### 프로덕션 DB 마이그레이션
+
+```bash
+# 터미널 1: Cloud SQL Proxy 실행
+cloud-sql-proxy PROJECT_ID:asia-northeast3:artar-db --port=5433
+
+# 터미널 2: 마이그레이션 적용
+cd backend
+DATABASE_URL=postgresql+asyncpg://artar:PASSWORD@localhost:5433/artar alembic upgrade head
+```
+
 ## 프론트엔드 팀 API 연동
 
-- **Swagger UI**: http://localhost:8080/docs — 인터랙티브 API 테스트
-- **ReDoc**: http://localhost:8080/redoc — 깔끔한 API 레퍼런스 문서
-- **OpenAPI JSON**: http://localhost:8080/openapi.json — 코드 생성용 스키마
+로컬 개발:
+
+- **Swagger UI**: http://localhost:8080/docs
+- **ReDoc**: http://localhost:8080/redoc
+- **OpenAPI JSON**: http://localhost:8080/openapi.json
+
+프로덕션 (Cloud Run 배포 URL):
+
+- **Swagger UI**: `https://https://artar-backend-932907510949.asia-northeast3.run.app/docs`
+- **ReDoc**: `https://https://artar-backend-932907510949.asia-northeast3.run.app/redoc`
 
 모바일 앱 팀은 `/api/v1/app/*` 엔드포인트만 사용하며, `lang` 쿼리 파라미터로 다국어를 지정합니다 (`ko`, `en`, `jp`, `cn`).
 

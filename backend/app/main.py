@@ -112,3 +112,9 @@ app.include_router(api_v1_router, prefix="/api/v1")
 @app.get("/health")
 async def health_check():
     return {"status": "ok"}
+
+# GCP 배포용 포트 번호 설정
+if __name__ == "__main__":
+    import uvicorn
+    # port를 8080으로 설정
+    uvicorn.run(app, host="0.0.0.0", port=8080)
