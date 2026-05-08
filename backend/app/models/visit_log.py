@@ -32,3 +32,9 @@ class VisitLog(Base):
     event: Mapped["Event | None"] = relationship(  # noqa: F821
         back_populates="visit_logs"
     )
+    venue: Mapped["Venue | None"] = relationship(  # noqa: F821
+        back_populates="visit_logs"
+    )
+    artwork: Mapped["Artwork | None"] = relationship(  # noqa: F821
+        back_populates="visit_logs"
+    )

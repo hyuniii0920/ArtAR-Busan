@@ -1,14 +1,14 @@
 import uuid
 
-from sqlalchemy import Boolean, Float, ForeignKey, Integer, String, Text
+from sqlalchemy import Boolean, Float, ForeignKey, Integer, String
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database import Base
-from app.models.base import gen_uuid
+from app.models.base import TimestampMixin, gen_uuid
 
 
-class Venue(Base):
+class Venue(TimestampMixin, Base):
     __tablename__ = "venue"
 
     id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=gen_uuid)
@@ -27,4 +27,7 @@ class Venue(Base):
     event: Mapped["Event"] = relationship(back_populates="venues")  # noqa: F821
     artworks: Mapped[list["Artwork"]] = relationship(  # noqa: F821
         back_populates="venue", cascade="all, delete-orphan"
+    )
+    visit_logs: Mapped[list["VisitLog"]] = relationship(  # noqa: F821
+        back_populates="venue"
     )

@@ -127,11 +127,24 @@ python -m scripts.seed --reset  # 기존 데이터 삭제 후 재삽입
 
 프로덕션 서버는 GCP Cloud Run + Cloud SQL에 배포되어 있습니다.
 
-| 리소스    | 구성                                          |
-| --------- | --------------------------------------------- |
-| Cloud Run | `artar-backend`, asia-northeast3 리전         |
-| Cloud SQL | PostgreSQL 15 (`artar-db`), db-f1-micro       |
-| CI/CD     | GitHub Actions (main push → 테스트 자동 실행) |
+| 리소스         | 구성                                                      |
+| -------------- | --------------------------------------------------------- |
+| Cloud Run      | `artar-backend`, asia-northeast3 리전                     |
+| Cloud SQL      | PostgreSQL 15 (`artar-db`), db-f1-micro                   |
+| Secret Manager | DATABASE_URL, JWT_SECRET, ADMIN_USERNAME 등 5개 시크릿    |
+| CI/CD          | GitHub Actions — main push 시 test → Cloud Run 자동 배포 |
+
+### CI/CD 자동 배포
+
+`backend/` 하위 파일을 수정하고 main에 push하면 자동으로 배포됩니다.
+
+```
+main push → Lint + Test → Cloud Run 배포
+```
+
+- **인증**: Workload Identity Federation (`github-pool`) → `github-deploy` 서비스 계정
+- **시크릿**: GCP Secret Manager에서 Cloud Run으로 주입
+- **GitHub Secrets**: `WIF_PROVIDER`, `WIF_SERVICE_ACCOUNT`, `CLOUD_SQL_CONNECTION`
 
 ### 수동 배포
 
@@ -144,7 +157,7 @@ gcloud run deploy artar-backend --source=. --region=asia-northeast3
 
 ```bash
 # 터미널 1: Cloud SQL Proxy 실행
-cloud-sql-proxy PROJECT_ID:asia-northeast3:artar-db --port=5433
+cloud-sql-proxy artar-492707:asia-northeast3:artar-db --port=5433
 
 # 터미널 2: 마이그레이션 적용
 cd backend
@@ -161,8 +174,8 @@ DATABASE_URL=postgresql+asyncpg://artar:PASSWORD@localhost:5433/artar alembic up
 
 프로덕션 (Cloud Run 배포 URL):
 
-- **Swagger UI**: `https://https://artar-backend-932907510949.asia-northeast3.run.app/docs`
-- **ReDoc**: `https://https://artar-backend-932907510949.asia-northeast3.run.app/redoc`
+- **Swagger UI**: `https://artar-backend-932907510949.asia-northeast3.run.app/docs`
+- **ReDoc**: `https://artar-backend-932907510949.asia-northeast3.run.app/redoc`
 
 모바일 앱 팀은 `/api/v1/app/*` 엔드포인트만 사용하며, `lang` 쿼리 파라미터로 다국어를 지정합니다 (`ko`, `en`, `jp`, `cn`).
 

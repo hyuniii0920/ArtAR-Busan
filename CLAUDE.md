@@ -72,15 +72,17 @@ cd backend && uvicorn app.main:app --reload --port 8080
 cd backend && gcloud run deploy artar-backend --source=. --region=asia-northeast3
 
 # Cloud SQL Proxy 통해 프로덕션 DB 마이그레이션
-cloud-sql-proxy PROJECT_ID:asia-northeast3:artar-db --port=5433
+cloud-sql-proxy artar-492707:asia-northeast3:artar-db --port=5433
 ```
 
 ## Deployment
 
 - **Cloud Run**: `artar-backend` 서비스, `asia-northeast3` 리전
 - **Cloud SQL**: `artar-db` (PostgreSQL 15, db-f1-micro), Cloud Run과 Unix 소켓 연결
-- **CI/CD**: `.github/workflows/deploy.yml` — main push 시 test job 실행, deploy job은 활성화 시 자동 배포
-- **환경변수**: Cloud Run 서비스에 직접 설정 (DATABASE_URL, JWT_SECRET 등)
+- **CI/CD**: `.github/workflows/deploy.yml` — main push 시 test → 자동 배포
+- **인증**: Workload Identity Federation (`github-pool` / `github-provider`) → `github-deploy` 서비스 계정
+- **시크릿**: GCP Secret Manager에 저장 (DATABASE_URL, JWT_SECRET, ADMIN_USERNAME, ADMIN_PASSWORD_HASH, GCS_BUCKET)
+- **GitHub Secrets**: `WIF_PROVIDER`, `WIF_SERVICE_ACCOUNT`, `CLOUD_SQL_CONNECTION`
 
 ## Architecture Decisions
 

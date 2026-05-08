@@ -55,22 +55,41 @@ jobs:
       - name: Run tests
         run: pytest -v
 
-  # deploy:
-  #   needs: test
-  #   if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-  #   runs-on: ubuntu-latest
-  #   permissions:
-  #     contents: read
-  #     id-token: write
-  #   steps:
-  #     - uses: actions/checkout@v4
-  #     - id: auth
-  #       uses: google-github-actions/auth@v2
-  #       with:
-  #         workload_identity_provider: ${{ secrets.WIF_PROVIDER }}
-  #         service_account: ${{ secrets.WIF_SERVICE_ACCOUNT }}
-  #     - uses: google-github-actions/deploy-cloudrun@v2
-  #       with:
-  #         service: artar-backend
-  #         source: backend/
-  #         region: asia-northeast3
+  deploy:
+    needs: test
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - id: auth
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ secrets.WIF_PROVIDER }}
+          service_account: ${{ secrets.WIF_SERVICE_ACCOUNT }}
+
+      - name: Deploy to Cloud Run
+        uses: google-github-actions/deploy-cloudrun@v2
+        with:
+          service: artar-backend
+          source: backend/
+          region: asia-northeast3
+          env_vars: |
+            ENV=production
+          secrets: |
+            DATABASE_URL=DATABASE_URL:latest
+            JWT_SECRET=JWT_SECRET:latest
+            ADMIN_USERNAME=ADMIN_USERNAME:latest
+            ADMIN_PASSWORD_HASH=ADMIN_PASSWORD_HASH:latest
+            GCS_BUCKET=GCS_BUCKET:latest
+          flags: |
+            --add-cloudsql-instances=${{ secrets.CLOUD_SQL_CONNECTION }}
+            --memory=512Mi
+            --min-instances=0
+            --max-instances=2
+            --port=8080
+            --allow-unauthenticated

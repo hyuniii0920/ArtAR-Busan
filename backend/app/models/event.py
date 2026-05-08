@@ -30,7 +30,7 @@ class Event(TimestampMixin, Base):
     )
 
 
-class EventTheme(Base):
+class EventTheme(TimestampMixin, Base):
     __tablename__ = "event_theme"
 
     id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=gen_uuid)

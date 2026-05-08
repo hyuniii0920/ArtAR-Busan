@@ -1,15 +1,14 @@
 import uuid
-from datetime import datetime
 
-from sqlalchemy import Boolean, DateTime, ForeignKey, Integer, String, Text
+from sqlalchemy import Boolean, ForeignKey, Integer, String, Text
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database import Base
-from app.models.base import gen_uuid, utcnow
+from app.models.base import TimestampMixin, gen_uuid
 
 
-class Artwork(Base):
+class Artwork(TimestampMixin, Base):
     __tablename__ = "artwork"
 
     id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=gen_uuid)
@@ -24,9 +23,9 @@ class Artwork(Base):
     media_type: Mapped[str] = mapped_column(String(20), default="image")
     sort_order: Mapped[int] = mapped_column(Integer, default=0)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
-    created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), default=utcnow
-    )
 
-    # Relationship
+    # Relationships
     venue: Mapped["Venue"] = relationship(back_populates="artworks")  # noqa: F821
+    visit_logs: Mapped[list["VisitLog"]] = relationship(  # noqa: F821
+        back_populates="artwork"
+    )
