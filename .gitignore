@@ -1,6 +1,7 @@
 # Python
 __pycache__/
 *.py[cod]
+*.egg
 *.egg-info/
 dist/
 build/
@@ -8,9 +9,35 @@ build/
 
 # Environment
 .env
-.env.local
+.env.*
+!.env.example
 .venv/
 venv/
+env/
+
+# Secrets / Credentials
+*.key
+*.pem
+*.p12
+*.pfx
+*-credentials.json
+*-credential.json
+service-account*.json
+service_account*.json
+gcp-key*.json
+*-sa-key.json
+application_default_credentials.json
+secrets/
+*.secret
+*.secrets
+
+# GCP / Cloud SDK
+.gcloud/
+.gcp/
+cloud-sql-proxy
+cloud-sql-proxy.exe
+cloud_sql_proxy
+cloud_sql_proxy.exe
 
 # IDE
 .idea/
@@ -18,10 +45,19 @@ venv/
 *.swp
 *.swo
 
-# Testing
+# Testing / Lint cache
 .pytest_cache/
+.ruff_cache/
+.mypy_cache/
 .coverage
 htmlcov/
+
+# Logs
+*.log
+
+# Local DB
+*.db
+*.sqlite3
 
 # OS
 .DS_Store

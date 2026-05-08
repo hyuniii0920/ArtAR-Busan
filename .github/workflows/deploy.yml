@@ -33,15 +33,17 @@ jobs:
           --health-retries 5
 
     env:
+      # 모든 값은 CI 테스트 전용 더미 (prod는 Secret Manager에서 주입)
       DATABASE_URL: postgresql+asyncpg://artar:artar@localhost:5432/artar_test
       JWT_SECRET: test-secret
       ADMIN_USERNAME: admin
-      ADMIN_PASSWORD_HASH: "$2b$12$LJ3m4ks5QFtQz1ANHGOJa.GsFBGFN7NlHqmJB2g6Gv8CxTdLRjBHO"
+      # 평문 'test-only-not-real' 의 bcrypt 해시 (prod와 무관)
+      ADMIN_PASSWORD_HASH: "$2b$12$/YSPx/aauoZwyFxqBKSbG.TrHAHu1A3j9fhwJ7a0zE7lRn4j6Jt5u"
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v6
         with:
           python-version: "3.11"
           cache: pip
@@ -64,16 +66,16 @@ jobs:
       id-token: write
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - id: auth
-        uses: google-github-actions/auth@v2
+        uses: google-github-actions/auth@v3
         with:
           workload_identity_provider: ${{ secrets.WIF_PROVIDER }}
           service_account: ${{ secrets.WIF_SERVICE_ACCOUNT }}
 
       - name: Deploy to Cloud Run
-        uses: google-github-actions/deploy-cloudrun@v2
+        uses: google-github-actions/deploy-cloudrun@v3
         with:
           service: artar-backend
           source: backend/
