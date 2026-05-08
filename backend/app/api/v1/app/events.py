@@ -6,7 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from app.dependencies import get_db
-from app.models import Event, EventTheme, Venue
+from app.models import Event, Venue
 from app.schemas.common import ApiResponse, PaginationMeta
 from app.schemas.event import EventListResponse, EventResponse
 

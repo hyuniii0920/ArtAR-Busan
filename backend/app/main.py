@@ -62,7 +62,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     # Startup: DB 커넥션 풀 워밍업
     from app.database import engine
 
-    async with engine.begin() as conn:
+    async with engine.begin():
         pass  # 커넥션 테스트
     yield
     # Shutdown
