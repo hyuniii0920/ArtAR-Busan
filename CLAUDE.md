@@ -30,7 +30,7 @@ backend/
 │   ├── services/        # 비즈니스 로직
 │   └── utils/           # i18n 헬퍼 등
 ├── alembic/             # DB 마이그레이션
-│   └── versions/        # 마이그레이션 파일 (initial_schema 포함)
+│   └── versions/        # 마이그레이션 파일들 (initial_schema, timestamps/visit_log 관계 등)
 ├── scripts/
 │   └── seed.py          # 개발용 시드 데이터 (행사·장소·작품 샘플)
 ├── tests/               # pytest-asyncio 테스트
@@ -79,10 +79,12 @@ cloud-sql-proxy artar-492707:asia-northeast3:artar-db --port=5433
 
 - **Cloud Run**: `artar-backend` 서비스, `asia-northeast3` 리전
 - **Cloud SQL**: `artar-db` (PostgreSQL 15, db-f1-micro), Cloud Run과 Unix 소켓 연결
+- **Cloud Storage**: `artar-busan-assets` 버킷, `asia-northeast3`. 객체 업로드는 PUT signed URL로만 진행 — 어드민 CMS origin은 버킷 CORS에 등록되어 있음
 - **CI/CD**: `.github/workflows/deploy.yml` — main push 시 test → 자동 배포
 - **인증**: Workload Identity Federation (`github-pool` / `github-provider`) → `github-deploy` 서비스 계정
 - **시크릿**: GCP Secret Manager에 저장 (DATABASE_URL, JWT_SECRET, ADMIN_USERNAME, ADMIN_PASSWORD_HASH, GCS_BUCKET)
 - **GitHub Secrets**: `WIF_PROVIDER`, `WIF_SERVICE_ACCOUNT`, `CLOUD_SQL_CONNECTION`
+- **Cloud Run runtime SA 권한**: 기본 Compute SA(`...-compute@developer.gserviceaccount.com`)에 `secretmanager.secretAccessor`, `iam.serviceAccountTokenCreator`(self), GCS 버킷 `storage.objectAdmin` 부여
 
 ## Architecture Decisions
 
@@ -90,4 +92,8 @@ cloud-sql-proxy artar-492707:asia-northeast3:artar-db --port=5433
 - **i18n**: JSONB 컬럼 `{"ko":"...", "en":"...", "jp":"...", "cn":"..."}`, `utils/i18n.py`의 `localize()` 함수로 추출
 - **인증**: 환경변수 기반 단일 관리자 + JWT (python-jose), `dependencies.py`의 `get_current_admin`
 - **데이터 계층**: Event → Venue → Artwork (물리적 장소 바인딩)
+- **타임스탬프 정책**: CMS 편집 대상 엔티티(Event, EventTheme, Venue, Artwork)는 `models/base.py`의 `TimestampMixin`을 상속해 `created_at`/`updated_at`을 자동 관리. CMS의 마지막 수정일 노출/정렬에 사용
+- **VisitLog 관계**: `event`/`venue`/`artwork` 모두 `ondelete=SET NULL`로 약하게 연결 — 참조 대상이 삭제돼도 통계 보존을 위해 로그는 남김. ORM 레벨에 양방향 `visit_logs` 역참조 정의(통계 쿼리에서 직관적 접근)
+- **이미지 업로드**: GCS v4 PUT signed URL 방식 — 백엔드는 `POST /api/v1/admin/upload/signed-url`로 발급만 하고, 클라이언트가 GCS에 직접 PUT. Cloud Run runtime SA의 self-impersonation(`iam.serviceAccountTokenCreator` 셀프 부여)으로 서명. 구현은 `services/gcs.py`
+- **검증 정책**: Pydantic 스키마에서 도메인 제약 강제 — slug 패턴, HEX 색상, lat/lng 범위(`-90~90`/`-180~180`), `media_type` Literal(image/video/audio/model3d), URL `https?://` 패턴, Event `end_date >= start_date` model_validator. slug 중복은 라우터에서 409로 매핑
 - **익명 체크인**: `device_hash` (SHA-256 + salt)로 PII 미저장

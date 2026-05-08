@@ -64,6 +64,19 @@ async def create_artwork(
     return ApiResponse(data=ArtworkResponse.model_validate(artwork))
 
 
+@router.get("/artworks/{artwork_id}", response_model=ApiResponse[ArtworkResponse])
+async def get_artwork(
+    artwork_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+    _admin: str = Depends(get_current_admin),
+):
+    result = await db.execute(select(Artwork).where(Artwork.id == artwork_id))
+    artwork = result.scalar_one_or_none()
+    if not artwork:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
+    return ApiResponse(data=ArtworkResponse.model_validate(artwork))
+
+
 @router.put("/artworks/{artwork_id}", response_model=ApiResponse[ArtworkResponse])
 async def update_artwork(
     artwork_id: uuid.UUID,

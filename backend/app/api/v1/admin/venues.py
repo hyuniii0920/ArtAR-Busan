@@ -93,6 +93,37 @@ async def create_venue(
     )
 
 
+@router.get("/venues/{venue_id}", response_model=ApiResponse[VenueResponse])
+async def get_venue(
+    venue_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+    _admin: str = Depends(get_current_admin),
+):
+    result = await db.execute(select(Venue).where(Venue.id == venue_id))
+    venue = result.scalar_one_or_none()
+    if not venue:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
+
+    ac = await db.execute(
+        select(func.count()).where(Artwork.venue_id == venue.id)
+    )
+
+    return ApiResponse(
+        data=VenueResponse(
+            id=venue.id,
+            event_id=venue.event_id,
+            name_i18n=venue.name_i18n,
+            lat=venue.lat,
+            lng=venue.lng,
+            description_i18n=venue.description_i18n,
+            address=venue.address,
+            sort_order=venue.sort_order,
+            is_active=venue.is_active,
+            artwork_count=ac.scalar() or 0,
+        )
+    )
+
+
 @router.put("/venues/{venue_id}", response_model=ApiResponse[VenueResponse])
 async def update_venue(
     venue_id: uuid.UUID,

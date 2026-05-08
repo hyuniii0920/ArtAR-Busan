@@ -7,11 +7,11 @@ from app.schemas.common import I18nField
 
 class VenueBase(BaseModel):
     name_i18n: I18nField
-    lat: float
-    lng: float
+    lat: float = Field(ge=-90, le=90)
+    lng: float = Field(ge=-180, le=180)
     description_i18n: I18nField = Field(default_factory=I18nField)
     address: str | None = Field(default=None, max_length=500)
-    sort_order: int = 0
+    sort_order: int = Field(default=0, ge=0)
     is_active: bool = True
 
 
@@ -21,11 +21,11 @@ class VenueCreate(VenueBase):
 
 class VenueUpdate(BaseModel):
     name_i18n: I18nField | None = None
-    lat: float | None = None
-    lng: float | None = None
+    lat: float | None = Field(default=None, ge=-90, le=90)
+    lng: float | None = Field(default=None, ge=-180, le=180)
     description_i18n: I18nField | None = None
-    address: str | None = None
-    sort_order: int | None = None
+    address: str | None = Field(default=None, max_length=500)
+    sort_order: int | None = Field(default=None, ge=0)
     is_active: bool | None = None
 
 

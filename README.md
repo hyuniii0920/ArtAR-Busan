@@ -51,10 +51,13 @@ Event (행사)
  ├── Venue (장소: 좌표, 다국어 설명)       [1:N]
  │    └── Artwork (작품: AR 마커, 미디어)   [1:N]
  └── VisitLog (익명 방문 로그)             [1:N]
+        ↑ event/venue/artwork 모두 SET NULL로 약하게 참조
 ```
 
 - 다국어 필드는 JSONB: `{"ko":"...", "en":"...", "jp":"...", "cn":"..."}`
 - 익명 체크인: `device_hash` (SHA-256 + salt), 개인식별정보 미저장
+- CMS 편집 엔티티(Event/EventTheme/Venue/Artwork)는 `created_at`/`updated_at` 자동 관리
+- 참조 대상(Venue·Artwork 등)이 삭제되어도 VisitLog는 보존되어 통계 연속성 유지
 
 ## 시작하기
 
@@ -112,16 +115,47 @@ python -m scripts.seed --reset  # 기존 데이터 삭제 후 재삽입
 
 ### 어드민 API (`/api/v1/admin/`) — JWT 인증
 
-| Method | Endpoint                                  | 설명                     |
-| ------ | ----------------------------------------- | ------------------------ |
-| POST   | `/auth/login`                             | 관리자 로그인 → JWT 발급 |
-| CRUD   | `/events`, `/events/{id}`                 | 행사 관리                |
-| PUT    | `/events/{id}/theme`                      | 테마 편집                |
-| CRUD   | `/events/{id}/venues`, `/venues/{id}`     | 장소 관리                |
-| CRUD   | `/venues/{id}/artworks`, `/artworks/{id}` | 작품 관리                |
-| POST   | `/upload/image`                           | 이미지 업로드 (GCS)      |
-| GET    | `/stats/events/{id}/summary`              | 방문 통계                |
-| GET    | `/stats/events/{id}/demographics`         | 언어/OS 분포             |
+| Method | Endpoint                                  | 설명                                |
+| ------ | ----------------------------------------- | ----------------------------------- |
+| POST   | `/auth/login`                             | 관리자 로그인 → JWT 발급            |
+| CRUD   | `/events`, `/events/{id}`                 | 행사 관리                           |
+| PUT    | `/events/{id}/theme`                      | 테마 upsert                         |
+| CRUD   | `/events/{id}/venues`, `/venues/{id}`     | 장소 관리                           |
+| CRUD   | `/venues/{id}/artworks`, `/artworks/{id}` | 작품 관리                           |
+| POST   | `/upload/signed-url`                      | GCS PUT용 signed URL 발급           |
+| GET    | `/stats/events/{id}/summary`              | 방문 통계                           |
+| GET    | `/stats/events/{id}/demographics`         | 언어/OS 분포                        |
+
+> 이전의 `POST /upload/image`(파일 직접 수신)는 410 Gone으로 응답합니다 — signed URL 흐름으로 마이그레이션하세요.
+
+### 이미지 업로드 흐름 (Signed URL 2단계)
+
+```
+1) CMS  → POST /api/v1/admin/upload/signed-url
+         body:  { filename, content_type }
+         resp:  { upload_url, public_url, key, content_type, expires_in_minutes }
+
+2) CMS  → PUT  upload_url  (브라우저가 GCS에 직접 PUT, Content-Type 헤더 필수)
+
+3) CMS  → PUT/POST  /admin/...  (받은 public_url을 artwork.media_url 등에 저장)
+```
+
+- `content_type`은 `image/jpeg | image/png | image/webp | image/gif`만 허용
+- `upload_url` 만료시간 기본 15분
+- 어드민 CMS origin은 GCS 버킷 CORS에 등록되어야 함 (현재 `localhost:3000`, `localhost:5173`)
+
+### 검증 정책 (Pydantic)
+
+| 필드 | 제약 |
+| ---- | ---- |
+| `Event.slug` | `^[a-z0-9-]+$`, 최대 100자, 중복 시 409 |
+| `Event.end_date` | `start_date` 이상 |
+| `EventTheme.primary_color` / `secondary_color` | `#RRGGBB` HEX |
+| `EventTheme.logo_url` / `hero_image_url` | `https?://` 시작 URL |
+| `Venue.lat` / `lng` | `-90~90` / `-180~180` |
+| `Artwork.media_type` | `image | video | audio | model3d` |
+| `Artwork.marker_image_url` / `media_url` | `https?://` 시작 URL |
+| `sort_order` | `>= 0` |
 
 ## 배포 (GCP Cloud Run)
 
@@ -131,6 +165,7 @@ python -m scripts.seed --reset  # 기존 데이터 삭제 후 재삽입
 | -------------- | --------------------------------------------------------- |
 | Cloud Run      | `artar-backend`, asia-northeast3 리전                     |
 | Cloud SQL      | PostgreSQL 15 (`artar-db`), db-f1-micro                   |
+| Cloud Storage  | `artar-busan-assets` 버킷, 어드민 CMS origin CORS 허용    |
 | Secret Manager | DATABASE_URL, JWT_SECRET, ADMIN_USERNAME 등 5개 시크릿    |
 | CI/CD          | GitHub Actions — main push 시 test → Cloud Run 자동 배포 |
 

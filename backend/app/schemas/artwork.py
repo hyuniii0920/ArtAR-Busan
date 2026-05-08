@@ -1,19 +1,23 @@
 import uuid
 from datetime import datetime
+from typing import Literal
 
 from pydantic import BaseModel, Field
 
 from app.schemas.common import I18nField
+
+URL_PATTERN = r"^https?://[^\s]+$"
+MediaType = Literal["image", "video", "audio", "model3d"]
 
 
 class ArtworkBase(BaseModel):
     title_i18n: I18nField
     description_i18n: I18nField = Field(default_factory=I18nField)
     artist: str | None = Field(default=None, max_length=200)
-    marker_image_url: str | None = None
-    media_url: str | None = None
-    media_type: str = Field(default="image", max_length=20)
-    sort_order: int = 0
+    marker_image_url: str | None = Field(default=None, pattern=URL_PATTERN)
+    media_url: str | None = Field(default=None, pattern=URL_PATTERN)
+    media_type: MediaType = "image"
+    sort_order: int = Field(default=0, ge=0)
     is_active: bool = True
 
 
@@ -24,11 +28,11 @@ class ArtworkCreate(ArtworkBase):
 class ArtworkUpdate(BaseModel):
     title_i18n: I18nField | None = None
     description_i18n: I18nField | None = None
-    artist: str | None = None
-    marker_image_url: str | None = None
-    media_url: str | None = None
-    media_type: str | None = None
-    sort_order: int | None = None
+    artist: str | None = Field(default=None, max_length=200)
+    marker_image_url: str | None = Field(default=None, pattern=URL_PATTERN)
+    media_url: str | None = Field(default=None, pattern=URL_PATTERN)
+    media_type: MediaType | None = None
+    sort_order: int | None = Field(default=None, ge=0)
     is_active: bool | None = None
 
 

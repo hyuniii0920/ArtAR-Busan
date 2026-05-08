@@ -1,28 +1,33 @@
-import asyncio
 from collections.abc import AsyncGenerator
+from datetime import datetime, timedelta, timezone
 
-import pytest
 import pytest_asyncio
+from bcrypt import gensalt, hashpw
 from httpx import ASGITransport, AsyncClient
+from jose import jwt
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
+from sqlalchemy.pool import NullPool
 
 from app.config import settings
 from app.database import Base
 from app.dependencies import get_db
 from app.main import app
 
-test_engine = create_async_engine(settings.DATABASE_URL, echo=False)
-test_session = async_sessionmaker(test_engine, class_=AsyncSession, expire_on_commit=False)
+TEST_ADMIN_PASSWORD = "test-only-password"
+settings.ADMIN_USERNAME = "admin"
+settings.ADMIN_PASSWORD_HASH = hashpw(
+    TEST_ADMIN_PASSWORD.encode(), gensalt()
+).decode()
+
+test_engine = create_async_engine(
+    settings.DATABASE_URL, echo=False, poolclass=NullPool
+)
+test_session = async_sessionmaker(
+    test_engine, class_=AsyncSession, expire_on_commit=False
+)
 
 
-@pytest.fixture(scope="session")
-def event_loop():
-    loop = asyncio.new_event_loop()
-    yield loop
-    loop.close()
-
-
-@pytest_asyncio.fixture(scope="session", autouse=True)
+@pytest_asyncio.fixture(scope="session", autouse=True, loop_scope="session")
 async def setup_db():
     async with test_engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
@@ -32,17 +37,30 @@ async def setup_db():
     await test_engine.dispose()
 
 
-@pytest_asyncio.fixture
+@pytest_asyncio.fixture(autouse=True, loop_scope="session")
+async def _clean_tables():
+    async with test_engine.begin() as conn:
+        for table in reversed(Base.metadata.sorted_tables):
+            await conn.execute(table.delete())
+    yield
+
+
+@pytest_asyncio.fixture(loop_scope="session")
 async def db() -> AsyncGenerator[AsyncSession]:
     async with test_session() as session:
         yield session
-        await session.rollback()
 
 
-@pytest_asyncio.fixture
-async def client(db: AsyncSession) -> AsyncGenerator[AsyncClient]:
+@pytest_asyncio.fixture(loop_scope="session")
+async def client() -> AsyncGenerator[AsyncClient]:
     async def override_get_db():
-        yield db
+        async with test_session() as session:
+            try:
+                yield session
+                await session.commit()
+            except Exception:
+                await session.rollback()
+                raise
 
     app.dependency_overrides[get_db] = override_get_db
     async with AsyncClient(
@@ -50,3 +68,18 @@ async def client(db: AsyncSession) -> AsyncGenerator[AsyncClient]:
     ) as c:
         yield c
     app.dependency_overrides.clear()
+
+
+@pytest_asyncio.fixture
+def admin_token() -> str:
+    expire = datetime.now(timezone.utc) + timedelta(hours=1)
+    return jwt.encode(
+        {"sub": settings.ADMIN_USERNAME, "exp": expire},
+        settings.JWT_SECRET,
+        algorithm=settings.JWT_ALGORITHM,
+    )
+
+
+@pytest_asyncio.fixture
+def auth_headers(admin_token: str) -> dict:
+    return {"Authorization": f"Bearer {admin_token}"}

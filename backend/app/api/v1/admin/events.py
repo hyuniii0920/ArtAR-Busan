@@ -66,6 +66,13 @@ async def create_event(
     db: AsyncSession = Depends(get_db),
     _admin: str = Depends(get_current_admin),
 ):
+    dup = await db.execute(select(Event.id).where(Event.slug == body.slug))
+    if dup.scalar_one_or_none():
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=f"slug '{body.slug}' already exists",
+        )
+
     event = Event(**body.model_dump())
     db.add(event)
     await db.flush()
@@ -134,6 +141,19 @@ async def update_event(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
 
     update_data = body.model_dump(exclude_unset=True)
+
+    if "slug" in update_data and update_data["slug"] != event.slug:
+        dup = await db.execute(
+            select(Event.id).where(
+                Event.slug == update_data["slug"], Event.id != event_id
+            )
+        )
+        if dup.scalar_one_or_none():
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail=f"slug '{update_data['slug']}' already exists",
+            )
+
     for key, value in update_data.items():
         setattr(event, key, value)
 
