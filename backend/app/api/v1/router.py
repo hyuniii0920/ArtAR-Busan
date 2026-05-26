@@ -10,6 +10,7 @@ from app.api.v1.admin.venues import router as admin_venues_router
 from app.api.v1.admin.artworks import router as admin_artworks_router
 from app.api.v1.admin.upload import router as admin_upload_router
 from app.api.v1.admin.stats import router as admin_stats_router
+from app.api.v1.admin.museums import router as admin_museums_router
 
 api_v1_router = APIRouter()
 
@@ -26,3 +27,4 @@ api_v1_router.include_router(admin_venues_router, prefix="/admin")
 api_v1_router.include_router(admin_artworks_router, prefix="/admin")
 api_v1_router.include_router(admin_upload_router, prefix="/admin")
 api_v1_router.include_router(admin_stats_router, prefix="/admin")
+api_v1_router.include_router(admin_museums_router, prefix="/admin")

@@ -113,11 +113,28 @@ python -m scripts.seed --reset  # 기존 데이터 삭제 후 재삽입
 | POST   | `/visits`                    | 익명 체크인 로그        |
 | GET    | `/events/{slug}/visit-count` | 스탬프 진행도 조회      |
 
-### 어드민 API (`/api/v1/admin/`) — JWT 인증
+### 어드민 인증/계정 API (`/api/v1/admin/auth/`)
+
+| Method | Endpoint                            | 인증        | 설명                                  |
+| ------ | ----------------------------------- | ----------- | ------------------------------------- |
+| POST   | `/auth/login`                       | 공개        | 로그인 → JWT + user 반환              |
+| POST   | `/auth/register-museum`             | 공개        | 미술관 가입 신청 (multipart) → PENDING |
+| GET    | `/auth/me`                          | 로그인      | 현재 사용자 정보 (role/status)        |
+| PATCH  | `/auth/museum-application/resubmit` | MUSEUM      | 거절된 미술관 재신청 (multipart)      |
+
+### 미술관 승인 관리 API (`/api/v1/admin/museums/`) — SUPER_ADMIN 전용
+
+| Method | Endpoint                  | 설명                                    |
+| ------ | ------------------------- | --------------------------------------- |
+| GET    | `/museums`                | 미술관 목록 (status/q/page/per_page)    |
+| PATCH  | `/museums/{id}/status`    | 승인/거절 (`museum_status` 변경)        |
+| PATCH  | `/museums/{id}`           | 미술관 정보 수정 (multipart)            |
+| DELETE | `/museums/{id}`           | 미술관 삭제 (증빙 파일도 정리)          |
+
+### 어드민 콘텐츠 API (`/api/v1/admin/`) — JWT 인증
 
 | Method | Endpoint                                  | 설명                                |
 | ------ | ----------------------------------------- | ----------------------------------- |
-| POST   | `/auth/login`                             | 관리자 로그인 → JWT 발급            |
 | CRUD   | `/events`, `/events/{id}`                 | 행사 관리                           |
 | PUT    | `/events/{id}/theme`                      | 테마 upsert                         |
 | CRUD   | `/events/{id}/venues`, `/venues/{id}`     | 장소 관리                           |
@@ -127,6 +144,13 @@ python -m scripts.seed --reset  # 기존 데이터 삭제 후 재삽입
 | GET    | `/stats/events/{id}/demographics`         | 언어/OS 분포                        |
 
 > 이전의 `POST /upload/image`(파일 직접 수신)는 410 Gone으로 응답합니다 — signed URL 흐름으로 마이그레이션하세요.
+
+### 인증/계정 모델
+
+- DB `users` 테이블 기반. `role`은 `SUPER_ADMIN` / `MUSEUM`, `museum_status`는 `PENDING_MUSEUM` / `APPROVED_MUSEUM` / `REJECTED_MUSEUM` / `null`(super admin)
+- 로그인 요청은 `{username, password}` 형식이며 `username`에 이메일을 넣습니다. 응답에 `user` 객체 포함 (`password_hash`는 절대 미노출)
+- 프론트 라우팅: SUPER_ADMIN → `/super-admin`, MUSEUM+PENDING → `/waiting`, MUSEUM+APPROVED → `/cms`, MUSEUM+REJECTED → `/rejected`
+- 신규 회원/승인 라우터의 에러는 `{ "success": false, "error": { "code", "message" } }` 형식 (code: `INVALID_CREDENTIALS`, `EMAIL_ALREADY_EXISTS`, `USER_NOT_FOUND`, `NOT_MUSEUM`, `NOT_LOGGED_IN`, `FORBIDDEN` 등)
 
 ### 이미지 업로드 흐름 (Signed URL 2단계)
 
@@ -197,6 +221,11 @@ cloud-sql-proxy artar-492707:asia-northeast3:artar-db --port=5433
 # 터미널 2: 마이그레이션 적용
 cd backend
 DATABASE_URL=postgresql+asyncpg://artar:PASSWORD@localhost:5433/artar alembic upgrade head
+
+# (최초 1회) SUPER_ADMIN 계정 시드 — ADMIN_PASSWORD_HASH/SUPER_ADMIN_EMAIL 환경변수 필요
+DATABASE_URL=postgresql+asyncpg://artar:PASSWORD@localhost:5433/artar \
+  ADMIN_PASSWORD_HASH='<bcrypt hash>' SUPER_ADMIN_EMAIL='admin@artar.local' \
+  python -m scripts.seed_superadmin
 ```
 
 ## 프론트엔드 팀 API 연동

@@ -73,3 +73,37 @@ def generate_signed_upload_url(
         "content_type": content_type,
         "expires_in_minutes": expires_in_minutes,
     }
+
+
+def upload_bytes(
+    content: bytes,
+    filename: str,
+    content_type: str | None = None,
+    prefix: str = "uploads",
+) -> dict:
+    """서버가 직접 GCS에 업로드 (회원가입 증빙 등 비로그인 컨텍스트용).
+
+    signed URL은 인증된 클라이언트가 직접 PUT하는 용도이고,
+    회원가입은 비로그인이라 백엔드가 multipart를 받아 직접 올린다.
+    """
+    ext = filename.rsplit(".", 1)[-1].lower() if "." in filename else "bin"
+    key = f"{prefix}/{uuid.uuid4()}.{ext}"
+
+    credentials = _get_credentials()
+    client = storage.Client(credentials=credentials)
+    blob = client.bucket(settings.GCS_BUCKET).blob(key)
+    blob.upload_from_string(content, content_type=content_type)
+
+    public_url = (
+        f"https://storage.googleapis.com/{settings.GCS_BUCKET}/{quote(key)}"
+    )
+
+    return {"key": key, "public_url": public_url, "filename": filename}
+
+
+def delete_object(key: str) -> None:
+    """업로드된 객체 삭제 (미술관 삭제 시 증빙 파일 정리)."""
+    credentials = _get_credentials()
+    client = storage.Client(credentials=credentials)
+    blob = client.bucket(settings.GCS_BUCKET).blob(key)
+    blob.delete()

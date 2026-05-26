@@ -15,6 +15,9 @@ class Settings(BaseSettings):
     ADMIN_USERNAME: str = "admin"
     ADMIN_PASSWORD_HASH: str = ""
 
+    # SUPER_ADMIN 시드 (DB users 테이블에 1계정 생성)
+    SUPER_ADMIN_EMAIL: str = "admin@artar.local"
+
     # GCS
     GCS_BUCKET: str = "artar-busan-assets"
 

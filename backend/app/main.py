@@ -9,6 +9,7 @@ from slowapi.middleware import SlowAPIMiddleware
 
 from app.config import settings
 from app.api.v1.router import api_v1_router
+from app.errors import AppError, app_error_handler
 from app.rate_limit import limiter
 
 
@@ -104,6 +105,9 @@ app.add_middleware(
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 app.add_middleware(SlowAPIMiddleware)
+
+# 도메인 에러 (code 포함 응답)
+app.add_exception_handler(AppError, app_error_handler)
 
 # Routers
 app.include_router(api_v1_router, prefix="/api/v1")
