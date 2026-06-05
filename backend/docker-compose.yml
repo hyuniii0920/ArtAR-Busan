@@ -1,6 +1,7 @@
 services:
   db:
     image: postgres:15-alpine
+    restart: unless-stopped
     environment:
       POSTGRES_USER: artar
       POSTGRES_PASSWORD: artar
@@ -14,15 +15,11 @@ services:
     build: .
     ports:
       - "8080:8080"
+    env_file:
+      - .env
     environment:
+      # 컨테이너 네트워크에서는 db 호스트로 접속 (.env의 localhost를 덮어씀)
       DATABASE_URL: postgresql+asyncpg://artar:artar@db:5432/artar
-      ENV: development
-      DEBUG: "true"
-      JWT_SECRET: dev-secret-key
-      ADMIN_USERNAME: admin
-      ADMIN_PASSWORD_HASH: "$$2b$$12$$LJ3m4ks5QFtQz1ANHGOJa.GsFBGFN7NlHqmJB2g6Gv8CxTdLRjBHO"
-      GCS_BUCKET: artar-busan-assets
-      CORS_ORIGINS: "http://localhost:3000,http://localhost:5173"
     depends_on:
       - db
     command: >

@@ -20,6 +20,43 @@ from app.schemas.event import (
 router = APIRouter(prefix="/events", tags=["Admin - Events"])
 
 
+def _event_response(event, venue_count, theme=None) -> EventResponse:
+    return EventResponse(
+        id=event.id,
+        name=event.name,
+        slug=event.slug,
+        start_date=event.start_date,
+        end_date=event.end_date,
+        is_public=event.is_public,
+        exhibition_hall_name=event.exhibition_hall_name,
+        location=event.location,
+        organizer_name=event.organizer_name,
+        memo=event.memo,
+        created_at=event.created_at,
+        updated_at=event.updated_at,
+        theme=theme,
+        venue_count=venue_count,
+    )
+
+
+def _event_list_item(event, venue_count) -> EventListResponse:
+    return EventListResponse(
+        id=event.id,
+        name=event.name,
+        slug=event.slug,
+        start_date=event.start_date,
+        end_date=event.end_date,
+        is_public=event.is_public,
+        exhibition_hall_name=event.exhibition_hall_name,
+        location=event.location,
+        organizer_name=event.organizer_name,
+        memo=event.memo,
+        created_at=event.created_at,
+        updated_at=event.updated_at,
+        venue_count=venue_count,
+    )
+
+
 @router.get("", response_model=ApiResponse[list[EventListResponse]])
 async def list_events(
     page: int = Query(default=1, ge=1),
@@ -41,18 +78,7 @@ async def list_events(
         vc = await db.execute(
             select(func.count()).where(Venue.event_id == event.id)
         )
-        items.append(
-            EventListResponse(
-                id=event.id,
-                name=event.name,
-                slug=event.slug,
-                start_date=event.start_date,
-                end_date=event.end_date,
-                is_public=event.is_public,
-                created_at=event.created_at,
-                venue_count=vc.scalar() or 0,
-            )
-        )
+        items.append(_event_list_item(event, vc.scalar() or 0))
 
     return ApiResponse(
         data=items,
@@ -78,19 +104,7 @@ async def create_event(
     await db.flush()
     await db.refresh(event)
 
-    return ApiResponse(
-        data=EventResponse(
-            id=event.id,
-            name=event.name,
-            slug=event.slug,
-            start_date=event.start_date,
-            end_date=event.end_date,
-            is_public=event.is_public,
-            created_at=event.created_at,
-            updated_at=event.updated_at,
-            venue_count=0,
-        )
-    )
+    return ApiResponse(data=_event_response(event, venue_count=0))
 
 
 @router.get("/{event_id}", response_model=ApiResponse[EventResponse])
@@ -111,18 +125,7 @@ async def get_event(
     )
 
     return ApiResponse(
-        data=EventResponse(
-            id=event.id,
-            name=event.name,
-            slug=event.slug,
-            start_date=event.start_date,
-            end_date=event.end_date,
-            is_public=event.is_public,
-            created_at=event.created_at,
-            updated_at=event.updated_at,
-            theme=event.theme,
-            venue_count=vc.scalar() or 0,
-        )
+        data=_event_response(event, vc.scalar() or 0, theme=event.theme)
     )
 
 
@@ -165,18 +168,7 @@ async def update_event(
     )
 
     return ApiResponse(
-        data=EventResponse(
-            id=event.id,
-            name=event.name,
-            slug=event.slug,
-            start_date=event.start_date,
-            end_date=event.end_date,
-            is_public=event.is_public,
-            created_at=event.created_at,
-            updated_at=event.updated_at,
-            theme=event.theme,
-            venue_count=vc.scalar() or 0,
-        )
+        data=_event_response(event, vc.scalar() or 0, theme=event.theme)
     )
 
 

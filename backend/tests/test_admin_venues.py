@@ -6,6 +6,9 @@ EVENT_PAYLOAD = {
     "start_date": "2026-03-01",
     "end_date": "2026-04-01",
     "is_public": True,
+    "exhibition_hall_name": "전시관",
+    "location": "부산",
+    "organizer_name": "운영사무국",
 }
 
 VENUE_PAYLOAD = {

@@ -130,12 +130,13 @@ python -m scripts.seed --reset  # 기존 데이터 삭제 후 재삽입
 | PATCH  | `/museums/{id}/status`    | 승인/거절 (`museum_status` 변경)        |
 | PATCH  | `/museums/{id}`           | 미술관 정보 수정 (multipart)            |
 | DELETE | `/museums/{id}`           | 미술관 삭제 (증빙 파일도 정리)          |
+| GET    | `/museums/{id}/proof-url` | 증빙 문서 조회용 signed URL (15분 만료) |
 
 ### 어드민 콘텐츠 API (`/api/v1/admin/`) — JWT 인증
 
 | Method | Endpoint                                  | 설명                                |
 | ------ | ----------------------------------------- | ----------------------------------- |
-| CRUD   | `/events`, `/events/{id}`                 | 행사 관리                           |
+| CRUD   | `/events`, `/events/{id}`                 | 행사 관리 (전시관/주최/메모 포함)   |
 | PUT    | `/events/{id}/theme`                      | 테마 upsert                         |
 | CRUD   | `/events/{id}/venues`, `/venues/{id}`     | 장소 관리                           |
 | CRUD   | `/venues/{id}/artworks`, `/artworks/{id}` | 작품 관리                           |
@@ -144,6 +145,19 @@ python -m scripts.seed --reset  # 기존 데이터 삭제 후 재삽입
 | GET    | `/stats/events/{id}/demographics`         | 언어/OS 분포                        |
 
 > 이전의 `POST /upload/image`(파일 직접 수신)는 410 Gone으로 응답합니다 — signed URL 흐름으로 마이그레이션하세요.
+
+### 행사(Event) 필드
+
+기본 필드(`name`, `slug`, `start_date`, `end_date`, `is_public`) 외에 CMS 편의를 위한 대표 전시관 정보를 Event에 직접 보유합니다.
+
+| 필드 | 생성 시 | 비고 |
+| --- | --- | --- |
+| `exhibition_hall_name` | 필수 | 대표 전시관명 |
+| `location` | 필수 | 주소/위치 |
+| `organizer_name` | 필수 | 주최측명 |
+| `memo` | 선택 | 운영 메모 |
+
+- `end_date`는 `start_date` 이상, `slug` 중복 시 409. 목록/상세/수정 응답 모두 위 필드를 포함합니다(기존 행은 `null`일 수 있음).
 
 ### 인증/계정 모델
 

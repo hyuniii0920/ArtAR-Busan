@@ -17,6 +17,10 @@ class Event(TimestampMixin, Base):
     start_date: Mapped[date] = mapped_column(Date)
     end_date: Mapped[date] = mapped_column(Date)
     is_public: Mapped[bool] = mapped_column(Boolean, default=False)
+    exhibition_hall_name: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    location: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    organizer_name: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    memo: Mapped[str | None] = mapped_column(Text, nullable=True)
 
     # Relationships
     theme: Mapped["EventTheme | None"] = relationship(

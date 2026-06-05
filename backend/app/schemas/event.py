@@ -34,6 +34,11 @@ class EventBase(BaseModel):
     start_date: date
     end_date: date
     is_public: bool = False
+    # 응답에서는 optional (기존 행은 값이 없을 수 있음)
+    exhibition_hall_name: str | None = Field(default=None, max_length=200)
+    location: str | None = Field(default=None, max_length=500)
+    organizer_name: str | None = Field(default=None, max_length=200)
+    memo: str | None = None
 
     @model_validator(mode="after")
     def _check_date_range(self) -> "EventBase":
@@ -43,7 +48,10 @@ class EventBase(BaseModel):
 
 
 class EventCreate(EventBase):
-    pass
+    # 생성 시에는 필수 (프론트 요청 스펙)
+    exhibition_hall_name: str = Field(min_length=1, max_length=200)
+    location: str = Field(min_length=1, max_length=500)
+    organizer_name: str = Field(min_length=1, max_length=200)
 
 
 class EventUpdate(BaseModel):
@@ -52,6 +60,10 @@ class EventUpdate(BaseModel):
     start_date: date | None = None
     end_date: date | None = None
     is_public: bool | None = None
+    exhibition_hall_name: str | None = Field(default=None, min_length=1, max_length=200)
+    location: str | None = Field(default=None, min_length=1, max_length=500)
+    organizer_name: str | None = Field(default=None, min_length=1, max_length=200)
+    memo: str | None = None
 
     @model_validator(mode="after")
     def _check_date_range(self) -> "EventUpdate":
@@ -77,6 +89,7 @@ class EventResponse(EventBase):
 class EventListResponse(EventBase):
     id: uuid.UUID
     created_at: datetime
+    updated_at: datetime
     venue_count: int = 0
 
     model_config = {"from_attributes": True}
