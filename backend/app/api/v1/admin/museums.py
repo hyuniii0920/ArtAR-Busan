@@ -1,11 +1,9 @@
 import uuid
-from urllib.parse import unquote
 
 from fastapi import APIRouter, Depends, File, Form, Query, UploadFile
 from sqlalchemy import func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.config import settings
 from app.dependencies import get_db, require_super_admin
 from app.errors import (
     contact_required,
@@ -33,15 +31,6 @@ async def _get_museum(db: AsyncSession, user_id: uuid.UUID) -> User:
     if user.role != ROLE_MUSEUM:
         raise not_museum()
     return user
-
-
-def _proof_key_from_url(url: str | None) -> str | None:
-    if not url:
-        return None
-    prefix = f"https://storage.googleapis.com/{settings.GCS_BUCKET}/"
-    if not url.startswith(prefix):
-        return None
-    return unquote(url[len(prefix):])
 
 
 @router.get("", response_model=ApiResponse[list[UserResponse]])
@@ -78,6 +67,25 @@ async def list_museums(
     return ApiResponse(
         data=[UserResponse.model_validate(u) for u in users],
         meta=PaginationMeta(total=total, page=page, per_page=per_page),
+    )
+
+
+@router.get("/{user_id}/proof-url", response_model=ApiResponse[dict])
+async def get_museum_proof_url(
+    user_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+    _admin: User = Depends(require_super_admin),
+):
+    user = await _get_museum(db, user_id)
+    key = gcs.key_from_public_url(user.proof_file_url)
+    if not key:
+        raise invalid_payload("등록된 증빙 파일이 없습니다.")
+    try:
+        url = gcs.generate_signed_download_url(key)
+    except RuntimeError as e:
+        raise invalid_payload(f"증빙 파일 URL 발급 실패: {e}")
+    return ApiResponse(
+        data={"url": url, "proof_file_name": user.proof_file_name}
     )
 
 
@@ -144,7 +152,7 @@ async def delete_museum(
 ):
     user = await _get_museum(db, user_id)
 
-    key = _proof_key_from_url(user.proof_file_url)
+    key = gcs.key_from_public_url(user.proof_file_url)
     await db.delete(user)
 
     if key:

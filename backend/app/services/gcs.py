@@ -6,7 +6,7 @@ Cloud Run runtime SA의 self-impersonation으로 v4 PUT signed URL을 발급한�
 
 import uuid
 from datetime import timedelta
-from urllib.parse import quote
+from urllib.parse import quote, unquote
 
 import google.auth
 from google.auth.transport import requests as gauth_requests
@@ -73,6 +73,40 @@ def generate_signed_upload_url(
         "content_type": content_type,
         "expires_in_minutes": expires_in_minutes,
     }
+
+
+def generate_signed_download_url(
+    key: str,
+    expires_in_minutes: int = DEFAULT_EXPIRES_MINUTES,
+) -> str:
+    """비공개 객체(증빙 문서 등)를 만료시간 있는 GET URL로 발급한다."""
+    credentials = _get_credentials()
+    sa_email = getattr(credentials, "service_account_email", None)
+    if not sa_email:
+        raise RuntimeError(
+            "GCS signing unavailable: credentials lack service_account_email."
+        )
+
+    client = storage.Client(credentials=credentials)
+    blob = client.bucket(settings.GCS_BUCKET).blob(key)
+
+    return blob.generate_signed_url(
+        version="v4",
+        expiration=timedelta(minutes=expires_in_minutes),
+        method="GET",
+        service_account_email=sa_email,
+        access_token=credentials.token,
+    )
+
+
+def key_from_public_url(url: str | None) -> str | None:
+    """저장된 public_url에서 객체 key를 추출한다."""
+    if not url:
+        return None
+    prefix = f"https://storage.googleapis.com/{settings.GCS_BUCKET}/"
+    if not url.startswith(prefix):
+        return None
+    return unquote(url[len(prefix):])
 
 
 def upload_bytes(
