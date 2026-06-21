@@ -40,6 +40,9 @@ def generate_signed_upload_url(
     ext = filename.rsplit(".", 1)[-1].lower() if "." in filename else "bin"
     key = f"uploads/{uuid.uuid4()}.{ext}"
 
+    # 작품·테마 이미지는 공개 자원 → 쓰기는 signed PUT, 읽기는 public 버킷의 public URL
+    bucket_name = settings.GCS_PUBLIC_BUCKET
+
     credentials = _get_credentials()
     sa_email = getattr(credentials, "service_account_email", None)
     if not sa_email:
@@ -51,7 +54,7 @@ def generate_signed_upload_url(
         )
 
     client = storage.Client(credentials=credentials)
-    blob = client.bucket(settings.GCS_BUCKET).blob(key)
+    blob = client.bucket(bucket_name).blob(key)
 
     upload_url = blob.generate_signed_url(
         version="v4",
@@ -62,9 +65,7 @@ def generate_signed_upload_url(
         access_token=credentials.token,
     )
 
-    public_url = (
-        f"https://storage.googleapis.com/{settings.GCS_BUCKET}/{quote(key)}"
-    )
+    public_url = f"https://storage.googleapis.com/{bucket_name}/{quote(key)}"
 
     return {
         "upload_url": upload_url,

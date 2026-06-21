@@ -19,7 +19,9 @@ class Settings(BaseSettings):
     SUPER_ADMIN_EMAIL: str = "admin@artar.local"
 
     # GCS
-    GCS_BUCKET: str = "artar-busan-assets"
+    GCS_BUCKET: str = "artar-busan-assets"  # 비공개 (증빙 proofs/ 등)
+    # 작품·테마 이미지 등 공개 자원 (allUsers read). signed PUT로 업로드, public URL로 조회
+    GCS_PUBLIC_BUCKET: str = "artar-busan-public"
 
     # CORS
     CORS_ORIGINS: str = "http://localhost:3000,http://localhost:5173"
