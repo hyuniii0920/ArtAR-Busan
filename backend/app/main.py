@@ -10,6 +10,7 @@ from slowapi.middleware import SlowAPIMiddleware
 from app.config import settings
 from app.api.v1.router import api_v1_router
 from app.api.works import router as works_router
+from app.api.museums import router as museums_router
 from app.errors import AppError, app_error_handler
 from app.rate_limit import limiter
 
@@ -29,6 +30,10 @@ OPENAPI_TAGS = [
         "description": "모바일 앱용 작품 조회 API. 장소별 작품 목록을 다국어로 반환합니다.",
     },
     {
+        "name": "App - Museums",
+        "description": "안드로이드 앱용 장소(미술관/문화공간) 디렉토리 API. camelCase 평탄 응답.",
+    },
+    {
         "name": "App - Visits",
         "description": "방문 기록 API. 익명 체크인 기록 생성 및 방문 장소 수 조회를 제공합니다.",
     },
@@ -43,6 +48,10 @@ OPENAPI_TAGS = [
     {
         "name": "Admin - Venues",
         "description": "어드민 장소 관리 API. 행사별 장소 CRUD를 제공합니다.",
+    },
+    {
+        "name": "Admin - Places",
+        "description": "어드민 장소(미술관/문화공간) 관리 API. 안드로이드 장소 디렉토리 CRUD를 제공합니다.",
     },
     {
         "name": "Admin - Artworks",
@@ -114,6 +123,7 @@ app.add_exception_handler(AppError, app_error_handler)
 app.include_router(api_v1_router, prefix="/api/v1")
 # Android 앱 전용 (비버전 /api/*)
 app.include_router(works_router, prefix="/api")
+app.include_router(museums_router, prefix="/api")
 
 
 @app.get("/health")
