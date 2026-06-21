@@ -113,6 +113,20 @@ python -m scripts.seed --reset  # 기존 데이터 삭제 후 재삽입
 | POST   | `/visits`                    | 익명 체크인 로그        |
 | GET    | `/events/{slug}/visit-count` | 스탬프 진행도 조회      |
 
+### Android 앱 전용 API (`/api/works/`) — 공개, 비버전
+
+안드로이드 앱이 QR(작품 정수 ID)로 단일 작품을 조회하는 평탄(snake_case) 응답 엔드포인트입니다. 기존 `/api/v1/app/*`와 별개로 `/api/*`에 마운트됩니다.
+
+| Method | Endpoint                 | 설명                                        |
+| ------ | ------------------------ | ------------------------------------------- |
+| GET    | `/api/works/{id}`        | 작품 단건 조회 (id=정수 `code`, 404 미존재) |
+| GET    | `/api/health`            | 헬스 체크                                   |
+
+- `id`는 `Artwork.code`(정수, 101+). 잘못된 형식은 422.
+- `?lang=ko|en|ja|zh` 선택, 기본 `ko`. (`ja`→`jp`, `zh`→`cn`로 내부 매핑)
+- 응답 필드: `id, title, artist, summary_description, detail_description, image_url, ar_asset_url, marker_image_url, marker_width_meters, media_url` (nullable은 `null`)
+- 404 본문: `{"detail": "Artwork not found"}`
+
 ### 어드민 인증/계정 API (`/api/v1/admin/auth/`)
 
 | Method | Endpoint                            | 인증        | 설명                                  |

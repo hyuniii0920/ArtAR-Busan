@@ -31,7 +31,7 @@ backend/
 │   ├── services/        # 비즈니스 로직 (gcs.py: signed URL + 직접 업로드)
 │   └── utils/           # i18n 헬퍼 등
 ├── alembic/             # DB 마이그레이션
-│   └── versions/        # 마이그레이션 파일들 (initial_schema, timestamps/visit_log 관계, users 테이블, event 상세필드 등)
+│   └── versions/        # 마이그레이션 파일들 (initial_schema, timestamps/visit_log 관계, users 테이블, event 상세필드, artwork android 필드 등)
 ├── scripts/
 │   ├── seed.py          # 개발용 시드 데이터 (행사·장소·작품 샘플)
 │   └── seed_superadmin.py  # SUPER_ADMIN 계정 시드 (멱등)
@@ -93,7 +93,8 @@ cloud-sql-proxy artar-492707:asia-northeast3:artar-db --port=5433
 
 ## Architecture Decisions
 
-- **API 구조**: `/api/v1/app/*` (모바일, 공개) + `/api/v1/admin/*` (CMS, JWT 인증)
+- **API 구조**: `/api/v1/app/*` (모바일, 공개) + `/api/v1/admin/*` (CMS, JWT 인증) + `/api/works/{id}`·`/api/health` (Android 앱 전용 비버전 공개 API)
+- **Android works API**: `GET /api/works/{id}` — id는 `Artwork.code`(정수 101+, UUID PK와 별개). 평탄 snake_case 응답(`summary_description`/`detail_description`/`image_url`/`ar_asset_url`/`marker_width_meters`), `?lang=ko|en|ja|zh`(기본 ko, ja→jp·zh→cn 매핑). 라우터는 `api/works.py`, 스키마는 `schemas/work.py`. 404 본문은 FastAPI 기본 `{"detail":...}`
 - **i18n**: JSONB 컬럼 `{"ko":"...", "en":"...", "jp":"...", "cn":"..."}`, `utils/i18n.py`의 `localize()` 함수로 추출
 - **인증**: DB `users` 테이블 기반 멀티 유저 + JWT (python-jose). role: `SUPER_ADMIN` / `MUSEUM`. JWT `sub`=user_id. `dependencies.py`의 `get_current_user`(User 반환)·`require_super_admin`·`get_current_admin`(기존 라우터 호환용, email 반환). 기존 환경변수 단일 관리자는 `scripts/seed_superadmin.py`로 SUPER_ADMIN 1계정으로 승계(이메일=`SUPER_ADMIN_EMAIL`, 비밀번호 해시=`ADMIN_PASSWORD_HASH` 재사용)
 - **미술관 회원/승인**: 미술관은 `POST /admin/auth/register-museum`(비인증, multipart)로 가입 → `PENDING_MUSEUM`. SUPER_ADMIN이 `/admin/museums`에서 승인/거절/수정/삭제. 거절된 미술관은 `/admin/auth/museum-application/resubmit`로 재신청. `proof_file`은 비로그인 컨텍스트라 백엔드가 GCS에 직접 업로드(`services/gcs.py: upload_bytes`, `proofs/` 프리픽스)

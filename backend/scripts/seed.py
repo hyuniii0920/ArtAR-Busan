@@ -134,16 +134,31 @@ def seed_artworks() -> list[Artwork]:
         # 부산시립미술관 작품들
         Artwork(
             id=ARTWORK_IDS[0],
+            code=101,
             venue_id=VENUE_1_ID,
-            title_i18n={"ko": "파도의 기억", "en": "Memory of Waves", "jp": "波の記憶", "cn": "波浪的记忆"},
+            title_i18n={"ko": "파도와 기억", "en": "Waves and Memory", "jp": "波と記憶", "cn": "波浪与记忆"},
             description_i18n={
                 "ko": "부산 바다를 모티브로 한 인터랙티브 AR 설치작품입니다.",
                 "en": "An interactive AR installation inspired by Busan's sea.",
                 "jp": "釜山の海をモチーフにしたインタラクティブAR設置作品です。",
                 "cn": "以釜山大海为主题的互动AR装置作品。",
             },
-            artist="김해수",
+            summary_description_i18n={
+                "ko": "작품 카드에 표시할 짧은 설명입니다.",
+                "en": "A short description shown on the artwork card.",
+                "jp": "作品カードに表示する短い説明です。",
+                "cn": "显示在作品卡片上的简短说明。",
+            },
+            detail_description_i18n={
+                "ko": "TTS와 상세 화면에 표시할 전체 작품 설명입니다.",
+                "en": "Full description shown on the detail screen and read by TTS.",
+                "jp": "TTSと詳細画面に表示する全体の作品説明です。",
+                "cn": "在详情页面显示并由TTS朗读的完整作品说明。",
+            },
+            artist="홍길동",
+            image_url="https://storage.googleapis.com/artar-busan-assets/demo/artwork-101.jpg",
             marker_image_url="https://storage.googleapis.com/artar-busan-assets/demo/marker-waves.png",
+            marker_width_meters=0.21,
             media_url="https://storage.googleapis.com/artar-busan-assets/demo/media-waves.mp4",
             media_type="video",
             sort_order=0,
@@ -152,6 +167,7 @@ def seed_artworks() -> list[Artwork]:
         ),
         Artwork(
             id=ARTWORK_IDS[1],
+            code=102,
             venue_id=VENUE_1_ID,
             title_i18n={"ko": "도시의 숨결", "en": "Breath of the City", "jp": "都市の息吹", "cn": "城市的呼吸"},
             description_i18n={
@@ -161,7 +177,9 @@ def seed_artworks() -> list[Artwork]:
                 "cn": "通过AR重新诠释釜山城市风景的作品。",
             },
             artist="이도윤",
+            image_url="https://storage.googleapis.com/artar-busan-assets/demo/artwork-102.jpg",
             marker_image_url="https://storage.googleapis.com/artar-busan-assets/demo/marker-city.png",
+            marker_width_meters=0.18,
             media_url="https://storage.googleapis.com/artar-busan-assets/demo/media-city.jpg",
             media_type="image",
             sort_order=1,
@@ -171,6 +189,7 @@ def seed_artworks() -> list[Artwork]:
         # F1963 작품들
         Artwork(
             id=ARTWORK_IDS[2],
+            code=103,
             venue_id=VENUE_2_ID,
             title_i18n={"ko": "철의 꽃", "en": "Iron Bloom", "jp": "鉄の花", "cn": "铁之花"},
             description_i18n={
@@ -189,6 +208,7 @@ def seed_artworks() -> list[Artwork]:
         ),
         Artwork(
             id=ARTWORK_IDS[3],
+            code=104,
             venue_id=VENUE_2_ID,
             title_i18n={"ko": "시간의 층위", "en": "Layers of Time", "jp": "時間の層", "cn": "时间的层次"},
             description_i18n={
@@ -207,6 +227,7 @@ def seed_artworks() -> list[Artwork]:
         # 감천문화마을 작품들
         Artwork(
             id=ARTWORK_IDS[4],
+            code=105,
             venue_id=VENUE_3_ID,
             title_i18n={"ko": "골목 이야기", "en": "Alley Stories", "jp": "路地の物語", "cn": "胡同故事"},
             description_i18n={
@@ -225,6 +246,7 @@ def seed_artworks() -> list[Artwork]:
         ),
         Artwork(
             id=ARTWORK_IDS[5],
+            code=106,
             venue_id=VENUE_3_ID,
             title_i18n={"ko": "색의 언덕", "en": "Hill of Colors", "jp": "色の丘", "cn": "色彩之丘"},
             description_i18n={

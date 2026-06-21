@@ -9,6 +9,7 @@ from slowapi.middleware import SlowAPIMiddleware
 
 from app.config import settings
 from app.api.v1.router import api_v1_router
+from app.api.works import router as works_router
 from app.errors import AppError, app_error_handler
 from app.rate_limit import limiter
 
@@ -111,10 +112,17 @@ app.add_exception_handler(AppError, app_error_handler)
 
 # Routers
 app.include_router(api_v1_router, prefix="/api/v1")
+# Android 앱 전용 (비버전 /api/*)
+app.include_router(works_router, prefix="/api")
 
 
 @app.get("/health")
 async def health_check():
+    return {"status": "ok"}
+
+
+@app.get("/api/health")
+async def api_health_check():
     return {"status": "ok"}
 
 # GCP 배포용 포트 번호 설정
