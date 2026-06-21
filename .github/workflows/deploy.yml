@@ -82,7 +82,6 @@ jobs:
           region: asia-northeast3
           env_vars: |
             ENV=production
-            PUBLIC_API_BASE_URL=https://artar-backend-ychpjp73fa-du.a.run.app
           secrets: |
             DATABASE_URL=DATABASE_URL:latest
             JWT_SECRET=JWT_SECRET:latest

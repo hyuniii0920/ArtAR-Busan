@@ -4,7 +4,6 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.config import settings
 from app.dependencies import get_current_admin, get_db
 from app.models import Artwork, Venue
 from app.schemas.artwork import ArtworkCreate, ArtworkResponse, ArtworkUpdate
@@ -14,11 +13,10 @@ router = APIRouter(tags=["Admin - Artworks"])
 
 
 def _to_response(artwork: Artwork) -> ArtworkResponse:
-    """ORM → 응답 변환. code가 있으면 QR용 딥링크 URL을 함께 채운다."""
+    """ORM → 응답 변환. code가 있으면 QR용 딥링크(artar://work/{code})를 채운다."""
     resp = ArtworkResponse.model_validate(artwork)
     if artwork.code is not None:
-        base = settings.PUBLIC_API_BASE_URL.rstrip("/")
-        resp.qr_url = f"{base}/api/works/{artwork.code}"
+        resp.qr_url = f"artar://work/{artwork.code}"
     return resp
 
 
