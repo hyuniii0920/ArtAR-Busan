@@ -60,6 +60,27 @@ async def test_create_and_get_artwork(client: AsyncClient, auth_headers: dict):
     assert res.json()["data"]["media_type"] == "video"
 
 
+async def test_code_auto_assigned_for_qr(client: AsyncClient, auth_headers: dict):
+    """작품 생성 시 QR용 정수 code가 101부터 순차 자동 채번된다."""
+    venue_id = await _create_venue(client, auth_headers)
+
+    first = await client.post(
+        f"/api/v1/admin/venues/{venue_id}/artworks",
+        json=ARTWORK_PAYLOAD,
+        headers=auth_headers,
+    )
+    second = await client.post(
+        f"/api/v1/admin/venues/{venue_id}/artworks",
+        json=ARTWORK_PAYLOAD,
+        headers=auth_headers,
+    )
+
+    assert first.json()["data"]["code"] == 101
+    assert second.json()["data"]["code"] == 102
+    # QR에 담을 딥링크 URL이 code 기반으로 함께 내려온다
+    assert first.json()["data"]["qr_url"].endswith("/api/works/101")
+
+
 async def test_invalid_media_type_returns_422(
     client: AsyncClient, auth_headers: dict
 ):

@@ -38,6 +38,8 @@ class ArtworkUpdate(BaseModel):
 
 class ArtworkResponse(ArtworkBase):
     id: uuid.UUID
+    code: int | None = None  # QR에 인코딩되는 정수 식별자 (자동 채번)
+    qr_url: str | None = None  # QR에 담을 완성된 딥링크 URL ({base}/api/works/{code})
     venue_id: uuid.UUID
     created_at: datetime
 

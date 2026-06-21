@@ -21,6 +21,9 @@ class Settings(BaseSettings):
     # GCS
     GCS_BUCKET: str = "artar-busan-assets"
 
+    # QR/딥링크용 공개 API base URL (프로덕션은 Cloud Run URL을 환경변수로 주입)
+    PUBLIC_API_BASE_URL: str = "http://localhost:8080"
+
     # CORS
     CORS_ORIGINS: str = "http://localhost:3000,http://localhost:5173"
 

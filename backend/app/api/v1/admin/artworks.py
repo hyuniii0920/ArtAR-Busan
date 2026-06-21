@@ -1,15 +1,25 @@
 import uuid
 
 from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.config import settings
 from app.dependencies import get_current_admin, get_db
 from app.models import Artwork, Venue
 from app.schemas.artwork import ArtworkCreate, ArtworkResponse, ArtworkUpdate
 from app.schemas.common import ApiResponse
 
 router = APIRouter(tags=["Admin - Artworks"])
+
+
+def _to_response(artwork: Artwork) -> ArtworkResponse:
+    """ORM → 응답 변환. code가 있으면 QR용 딥링크 URL을 함께 채운다."""
+    resp = ArtworkResponse.model_validate(artwork)
+    if artwork.code is not None:
+        base = settings.PUBLIC_API_BASE_URL.rstrip("/")
+        resp.qr_url = f"{base}/api/works/{artwork.code}"
+    return resp
 
 
 @router.get(
@@ -26,9 +36,7 @@ async def list_artworks(
     )
     artworks = result.scalars().all()
 
-    return ApiResponse(
-        data=[ArtworkResponse.model_validate(a) for a in artworks]
-    )
+    return ApiResponse(data=[_to_response(a) for a in artworks])
 
 
 @router.post(
@@ -46,8 +54,13 @@ async def create_artwork(
     if not venue_result.scalar_one_or_none():
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
 
+    # QR에 인코딩될 정수 code 자동 채번 (없으면 101부터, 기존 시드 규약과 일치)
+    max_code = (await db.execute(select(func.max(Artwork.code)))).scalar()
+    next_code = max_code + 1 if max_code is not None else 101
+
     artwork = Artwork(
         venue_id=venue_id,
+        code=next_code,
         title_i18n=body.title_i18n.to_dict(),
         description_i18n=body.description_i18n.to_dict(),
         artist=body.artist,
@@ -61,7 +74,7 @@ async def create_artwork(
     await db.flush()
     await db.refresh(artwork)
 
-    return ApiResponse(data=ArtworkResponse.model_validate(artwork))
+    return ApiResponse(data=_to_response(artwork))
 
 
 @router.get("/artworks/{artwork_id}", response_model=ApiResponse[ArtworkResponse])
@@ -74,7 +87,7 @@ async def get_artwork(
     artwork = result.scalar_one_or_none()
     if not artwork:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
-    return ApiResponse(data=ArtworkResponse.model_validate(artwork))
+    return ApiResponse(data=_to_response(artwork))
 
 
 @router.put("/artworks/{artwork_id}", response_model=ApiResponse[ArtworkResponse])
@@ -103,7 +116,7 @@ async def update_artwork(
     await db.flush()
     await db.refresh(artwork)
 
-    return ApiResponse(data=ArtworkResponse.model_validate(artwork))
+    return ApiResponse(data=_to_response(artwork))
 
 
 @router.delete("/artworks/{artwork_id}", status_code=204)
