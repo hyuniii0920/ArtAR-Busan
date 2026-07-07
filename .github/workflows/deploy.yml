@@ -89,7 +89,6 @@ jobs:
             ADMIN_PASSWORD_HASH=ADMIN_PASSWORD_HASH:latest
             GCS_BUCKET=GCS_BUCKET:latest
           flags: |
-            --add-cloudsql-instances=${{ secrets.CLOUD_SQL_CONNECTION }}
             --memory=512Mi
             --min-instances=0
             --max-instances=2

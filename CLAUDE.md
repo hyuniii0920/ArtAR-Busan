@@ -9,8 +9,8 @@ ArtAR Busan — 부산 문화행사용 공유 AR 앱 템플릿 플랫폼. 하나
 ## Tech Stack
 
 - **Backend**: FastAPI (Python 3.11), SQLAlchemy 2.0 (async), Alembic, Pydantic v2
-- **Database**: PostgreSQL 15 (JSONB for i18n)
-- **Infrastructure**: GCP Cloud Run, Cloud SQL, GCS, GitHub Actions CI/CD
+- **Database**: PostgreSQL (Neon 관리형 서버리스, JSONB for i18n) — 2026-07 Cloud SQL에서 이전
+- **Infrastructure**: GCP Cloud Run, GCS, GitHub Actions CI/CD + Neon(외부 Postgres)
 - **Frontend** (별도 팀): Kotlin + ARCore (Android 관람객 앱), React + TypeScript (어드민 CMS)
 
 ## Repository Structure
@@ -76,19 +76,20 @@ cd backend && uvicorn app.main:app --reload --port 8080
 # Cloud Run 수동 배포
 cd backend && gcloud run deploy artar-backend --source=. --region=asia-northeast3
 
-# Cloud SQL Proxy 통해 프로덕션 DB 마이그레이션
-cloud-sql-proxy artar-492707:asia-northeast3:artar-db --port=5433
+# 프로덕션 DB(Neon) 마이그레이션 — DATABASE_URL을 Neon 연결 문자열로 설정 후 실행
+# (Secret Manager DATABASE_URL 값 사용, 형식: postgresql+asyncpg://...neon.tech/neondb?ssl=require)
+cd backend && DATABASE_URL="<Neon 연결 문자열>" alembic upgrade head
 ```
 
 ## Deployment
 
 - **Cloud Run**: `artar-backend` 서비스, `asia-northeast3` 리전
-- **Cloud SQL**: `artar-db` (PostgreSQL 15, db-f1-micro), Cloud Run과 Unix 소켓 연결
+- **Database (Neon)**: 외부 관리형 서버리스 Postgres(AWS `ap-southeast-1` Singapore). Cloud Run은 `DATABASE_URL` 시크릿의 일반 TCP 연결(`postgresql+asyncpg://...neon.tech/neondb?ssl=require`, asyncpg는 `sslmode` 대신 `ssl` 쿼리 사용)로 접속. 2026-07 GCP 무료판 종료 대비 Cloud SQL에서 이전(비용 ₩0). 무료 티어라 유휴 시 오토서스펜드(첫 요청 콜드스타트 ~1s)
 - **Cloud Storage**: `artar-busan-assets` 버킷, `asia-northeast3`. 객체 업로드는 PUT signed URL로만 진행 — 어드민 CMS origin은 버킷 CORS에 등록되어 있음
 - **CI/CD**: `.github/workflows/deploy.yml` — main push 시 test → 자동 배포
 - **인증**: Workload Identity Federation (`github-pool` / `github-provider`) → `github-deploy` 서비스 계정
 - **시크릿**: GCP Secret Manager에 저장 (DATABASE_URL, JWT_SECRET, ADMIN_USERNAME, ADMIN_PASSWORD_HASH, GCS_BUCKET)
-- **GitHub Secrets**: `WIF_PROVIDER`, `WIF_SERVICE_ACCOUNT`, `CLOUD_SQL_CONNECTION`
+- **GitHub Secrets**: `WIF_PROVIDER`, `WIF_SERVICE_ACCOUNT` (`CLOUD_SQL_CONNECTION`은 Neon 이전으로 미사용)
 - **Cloud Run runtime SA 권한**: 기본 Compute SA(`...-compute@developer.gserviceaccount.com`)에 `secretmanager.secretAccessor`, `iam.serviceAccountTokenCreator`(self), GCS 버킷 `storage.objectAdmin` 부여
 
 ## Architecture Decisions

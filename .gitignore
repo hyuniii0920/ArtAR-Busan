@@ -59,6 +59,11 @@ htmlcov/
 *.db
 *.sqlite3
 
+# DB dumps / backups (실데이터 포함 — 커밋 금지)
+backend/backups/
+*.sql.gz
+*.dump
+
 # OS
 .DS_Store
 Thumbs.db
